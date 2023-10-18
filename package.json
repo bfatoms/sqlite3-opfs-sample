@@ -1,0 +1,17 @@
+{
+  "name": "sqlite3",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^4.4.11"
+  },
+  "dependencies": {
+    "@sqlite.org/sqlite-wasm": "^3.42.2-build1"
+  }
+}
