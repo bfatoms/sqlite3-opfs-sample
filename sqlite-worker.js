@@ -21,39 +21,73 @@ const initialize = async (init) => {
     message = 'OPFS is not available, created transient database';
   }
 
-  const test = await db.exec({
-    sql: "CREATE TABLE IF NOT EXISTS users (id INTEGER primary key, name TEXT, age INTEGER)",
+  console.time('create_users_table');
+  await db.exec({
+    sql: "CREATE TABLE IF NOT EXISTS users (id UUID primary key, name TEXT, age INTEGER)",
   });
+  console.timeEnd('create_users_table');
 
-  const ins = await db.exec({
-    sql: "INSERT OR IGNORE INTO users (id, name, age) values (1, 'Louie', 33),(2, 'Louie', 33),(3, 'Louie', 34),(4, 'Louie', 35),(5, 'Louie', 34),(6, 'Louie', 35)",
+  console.time('create_orders_table');
+  await db.exec({
+    sql: "CREATE TABLE IF NOT EXISTS orders (id UUID primary key, type string, order_number string unique)",
+  });
+  console.timeEnd('create_orders_table');
+
+  console.time('insert_users');
+  await db.exec({
+    sql: "INSERT OR IGNORE INTO users (id, name, age) values ('1a5ec39c-f1fd-495b-9346-e1a47ea7d682', 'Louie', 33),('1a5ec39c-f1fd-495b-9346-e1a47ea7d683', 'Louie', 33),('1a5ec39c-f1fd-495b-9346-e1a47ea7d684', 'Louie', 34),('1a5ec39c-f1fd-495b-9346-e1a47ea7d685', 'Louie', 35),('1a5ec39c-f1fd-495b-9346-e1a47ea7d686', 'Louie', 34),('1a5ec39c-f1fd-495b-9346-e1a47ea7d687', 'Louie', 35)",
     rowMode: 'object',
   });
+  console.timeEnd('insert_users');
 
-  const result = await db.exec({
-    sql: "SELECT * FROM users WHERE age > '33' AND name = 'Louie'",
+  console.time('insert_orders');
+  await db.exec({
+    sql: "INSERT OR IGNORE INTO orders (id, type, order_number) values ('1a5ec39c-f1fd-495b-9346-e1a47ea7d682', 'SALES_ORDER', 'SO-1'),('1a5ec39c-f1fd-495b-9346-e1a47ea7d683', 'SALES_ORDER', 'SO-2'),('1a5ec39c-f1fd-495b-9346-e1a47ea7d683', 'SALES_ORDER', 'SO-3'),('1a5ec39c-f1fd-495b-9346-e1a47ea7d685', 'SALES_ORDER', 'SO-4'),('1a5ec39c-f1fd-495b-9346-e1a47ea7d686', 'SALES_ORDER', 'SO-5'),('1a5ec39c-f1fd-495b-9346-e1a47ea7d687', 'SALES_ORDER', 'SO-6')",
+    rowMode: 'object',
+  });
+  console.timeEnd('insert_orders');
+
+  console.time('select_users');
+  const users = await db.exec({
+    sql: "SELECT * FROM users",
     rowMode: 'object',
     returnValue: "resultRows",
   });
+  console.timeEnd('select_users');
+  console.log("USERS: ", users);
 
-  // console.log(result);
+
+  console.time('select_users');
+  const orders = await db.exec({
+    sql: "SELECT * FROM orders",
+    rowMode: 'object',
+    returnValue: "resultRows",
+  });
+  console.timeEnd('select_users');
+
+  console.log("ORDERS: ", orders);
 
   if (debug) { console.log(message, db.filename); }
   return { success: true, data: { name: db.filename } };
 };
 
-const raw = async (query) => {
-  // console.log(db.exec('select * from users;'))
-  // console.log(db);
-  console.log("exec");
-  const result = await db.exec({
-    sql: query,
-    rowMode: 'object',
-    returnValue: 'resultRows'
-  });
-  console.log("exec",result);
+const raw = async (q) => {
+  let query = q.sql ?? q;
+  let params = q.params ?? [];
+  let result;
+  try {
+    result = await db.exec({
+      sql: query,
+      rowMode: 'object',
+      bind: params,
+      returnValue: 'resultRows'
+    });
+  }
+  catch (err) {
+    console.log(err);
+  }
+
   return result;
-  // return await db.exec(query);
 }
 
 // received messages from the caller
@@ -62,7 +96,7 @@ self.onmessage = async (event) => {
     case 'initialize':
       // initialize(event.data[1]);
       const data = await initialize(event.data[1]);
-      if(debug) { console.log(data.success, data.data); }
+      if (debug) { console.log(data.success, data.data); }
       // send message to the caller
       self.postMessage(['response', data]);
       break;
@@ -70,7 +104,7 @@ self.onmessage = async (event) => {
       // console.log(event.data[1].sql);
       const result = await raw(event.data[1].sql);
       // console.log(result);
-      self.postMessage(['response', {success: true, data: result}]);
+      self.postMessage(['response', { success: true, data: result }]);
       break;
   }
 }

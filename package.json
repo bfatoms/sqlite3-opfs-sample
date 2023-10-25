@@ -12,6 +12,6 @@
     "vite": "^4.4.11"
   },
   "dependencies": {
-    "@sqlite.org/sqlite-wasm": "^3.42.2-build1"
+    "@sqlite.org/sqlite-wasm": "^3.43.2-build1"
   }
 }
